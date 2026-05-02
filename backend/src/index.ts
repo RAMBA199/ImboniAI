@@ -10,6 +10,7 @@ import placesRouter from './routes/places';
 import businessesRouter from './routes/businesses';
 import preferencesRouter from './routes/preferences';
 import authRouter from './routes/auth';
+import conciergeRouter from './routes/concierge';
 import { clearResponseCache, getCacheStats, getBatchProcessorStats } from './services/gemini';
 import { testConnection, getOrCreateDemoUser } from './db';
 import { seedPlaces, seedBusinesses } from './db/seed';
@@ -77,6 +78,7 @@ app.use('/api/places', placesRouter);
 app.use('/api/businesses', businessesRouter);
 app.use('/api/preferences', preferencesRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/concierge', conciergeRouter);
 
 // Health check
 app.get('/health', (req, res) => {
