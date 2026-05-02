@@ -47,6 +47,16 @@ app.use(cors({
 // Logging
 app.use(morgan('dev'));
 
+// Detailed request logging for debugging
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  console.log('  URL:', req.originalUrl);
+  console.log('  Origin:', req.get('origin'));
+  console.log('  Host:', req.get('host'));
+  console.log('  User-Agent:', req.get('user-agent')?.substring(0, 100));
+  next();
+});
+
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -106,21 +116,81 @@ app.post('/admin/cache/clear', (req, res) => {
   res.json({ message: 'Cache cleared successfully' });
 });
 
-// 404 handler
+// 404 handler with detailed logging
 app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+  const errorDetails = {
+    error: 'Route not found',
+    timestamp: new Date().toISOString(),
+    request: {
+      method: req.method,
+      path: req.path,
+      fullUrl: req.originalUrl,
+      query: req.query,
+      headers: {
+        host: req.get('host'),
+        origin: req.get('origin'),
+        'content-type': req.get('content-type'),
+      },
+    },
+    server: {
+      env: process.env.NODE_ENV,
+      backend_url: process.env.BACKEND_URL || 'not set',
+      frontend_url: process.env.FRONTEND_URL || 'not set',
+    },
+    available_routes: [
+      'GET /health',
+      'POST /api/auth/register',
+      'POST /api/auth/login',
+      'GET /api/auth/profile',
+      'PUT /api/auth/profile',
+      'DELETE /api/auth/profile',
+      'POST /api/chat',
+      'POST /api/voice',
+      'GET /api/places',
+      'GET /api/businesses/hidden',
+      'POST /api/businesses/register',
+      'POST /api/preferences',
+      'POST /api/concierge/recommend',
+      'POST /api/concierge/quick',
+      'GET /api/concierge/trending',
+    ],
+  };
+
+  console.error('404 Not Found:', JSON.stringify(errorDetails, null, 2));
+  res.status(404).json(errorDetails);
 });
 
-// Error handler
+// Error handler with detailed logging
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Internal server error' });
+  const errorDetails = {
+    error: err.message || 'Internal server error',
+    timestamp: new Date().toISOString(),
+    request: {
+      method: req.method,
+      path: req.path,
+      fullUrl: req.originalUrl,
+    },
+    errorStack: err.stack,
+    errorType: err.constructor.name,
+  };
+
+  console.error('500 Server Error:', JSON.stringify(errorDetails, null, 2));
+  res.status(500).json(errorDetails);
 });
 
 // Start server
 app.listen(PORT, async () => {
   console.log(`\n🌍 Imboni API running on http://localhost:${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`✅ Frontend URL (CORS): ${process.env.FRONTEND_URL || 'not set'}`);
+  console.log(`📋 Available API routes:`);
+  console.log(`   - POST /api/auth/register, /api/auth/login`);
+  console.log(`   - GET /api/auth/profile (with userId param)`);
+  console.log(`   - PUT /api/auth/profile, DELETE /api/auth/profile`);
+  console.log(`   - POST /api/chat, /api/voice, /api/preferences`);
+  console.log(`   - GET /api/places, /api/businesses/hidden`);
+  console.log(`   - POST /api/businesses/register`);
+  console.log(`   - POST/GET /api/concierge/recommend, /api/concierge/quick, /api/concierge/trending`);
   
   try {
     await testConnection();

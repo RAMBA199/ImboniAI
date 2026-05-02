@@ -16,6 +16,56 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+// Request interceptor for detailed logging
+api.interceptors.request.use(
+  (config) => {
+    const logInfo = {
+      timestamp: new Date().toISOString(),
+      method: config.method?.toUpperCase(),
+      url: `${API_URL}${config.url}`,
+      baseURL: API_URL,
+      fullURL: config.url,
+      headers: config.headers,
+      data: config.data,
+      env: import.meta.env.PROD ? 'production' : 'development',
+    };
+    console.log('[API Request]', JSON.stringify(logInfo, null, 2));
+    return config;
+  },
+  (error) => {
+    console.error('[API Request Error]', error);
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for detailed logging
+api.interceptors.response.use(
+  (response) => {
+    const logInfo = {
+      timestamp: new Date().toISOString(),
+      status: response.status,
+      statusText: response.statusText,
+      url: response.config.url,
+      dataSize: JSON.stringify(response.data).length,
+    };
+    console.log('[API Response]', JSON.stringify(logInfo, null, 2));
+    return response;
+  },
+  (error) => {
+    const errorInfo = {
+      timestamp: new Date().toISOString(),
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      url: error.config?.url,
+      data: error.response?.data,
+      fullError: error.toString(),
+    };
+    console.error('[API Error]', JSON.stringify(errorInfo, null, 2));
+    return Promise.reject(error);
+  }
+);
+
 export async function fetchPlaces(params?: {
   category?: string;
   lat?: number;
