@@ -11,7 +11,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
 
-    "types": ["node"],
+    "types": [],
+
     "noImplicitAny": false,
 
     "declaration": true,
