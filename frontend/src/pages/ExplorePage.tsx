@@ -109,6 +109,8 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ preferences, onAskAI, onSugge
   const [locationUsed, setLocationUsed] = useState<'user' | 'default'>('default');
   const [dataSource, setDataSource] = useState<'database' | 'static'>('static');
 
+  const effectivePlaces = allPlaces.length > 0 ? allPlaces : STATIC_PLACES;
+
   const heroBg = useColorModeValue('brand.50', '#1a2635');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
   const sectionBg = useColorModeValue('gray.50', 'whiteAlpha.50');
@@ -157,21 +159,25 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ preferences, onAskAI, onSugge
       });
       console.log('API response:', data);
 
+      const apiPlaces = Array.isArray(data.places) ? data.places : [];
+      const shouldUseStaticFallback = apiPlaces.length === 0;
+      const rawPlaces = shouldUseStaticFallback ? STATIC_PLACES : apiPlaces;
+
       // Recalculate distances client-side using the freshest location we have
       // This ensures distances are always accurate regardless of what the server computed
       const freshLocation = currentLocation ?? userLocation;
       const placesWithFreshDistances = freshLocation
-        ? data.places.map((p: any) => ({
+        ? rawPlaces.map((p: any) => ({
             ...p,
             distance_km: Math.round(calculateDistanceKm(freshLocation, { lat: p.latitude, lon: p.longitude }) * 10) / 10,
           }))
-        : data.places;
+        : rawPlaces;
 
       setAllPlaces(placesWithFreshDistances);
-      setDataSource(data.dataSource || 'static');
+      setDataSource(shouldUseStaticFallback ? 'static' : data.dataSource || 'database');
       setLocationUsed(data.locationUsed ?? (currentLocation ? 'user' : 'default'));
-      if (onDataSourceChange && data.dataSource) {
-        onDataSourceChange(data.dataSource);
+      if (onDataSourceChange) {
+        onDataSourceChange(shouldUseStaticFallback ? 'static' : (data.dataSource || 'database'));
       }
 
       try {
@@ -296,7 +302,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ preferences, onAskAI, onSugge
 
   // Filter sections
   const forYouPlaces = (() => {
-    const combined = [...hiddenGems, ...allPlaces];
+    const combined = [...hiddenGems, ...effectivePlaces];
     const uniquePlaces = Array.from(new Map(combined.map(place => [place.id, place])).values());
 
     if (preferences.interests.length === 0) {
@@ -313,13 +319,13 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ preferences, onAskAI, onSugge
     return scored.slice(0, 6);
   })();
 
-  const popularPlaces = [...allPlaces]
+  const popularPlaces = [...effectivePlaces]
     .sort((a, b) => b.rating - a.rating)
     .slice(0, 6);
 
   // Only show "Near You" when we have the user's real GPS — never when using default coords
   const nearbyPlaces = locationUsed === 'user'
-    ? allPlaces
+    ? effectivePlaces
         .filter(p => p.distance_km !== undefined && p.distance_km !== null)
         .sort((a, b) => (a.distance_km ?? 0) - (b.distance_km ?? 0))
         .slice(0, 5)
@@ -454,7 +460,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ preferences, onAskAI, onSugge
               simpleMode={preferences.simpleMode}
               showSearch={true}
               onDataSourceChange={onDataSourceChange}
-              initialPlaces={allPlaces}
+              initialPlaces={effectivePlaces}
             />
           </Box>
 

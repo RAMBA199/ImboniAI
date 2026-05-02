@@ -169,8 +169,11 @@ export async function getPlaces(
       if (category && category !== 'all') {
         fallbackPlaces = fallbackPlaces.filter(p => p.category === category);
       }
+
+      const baseLat = userLat;
+      const baseLon = userLon;
       return fallbackPlaces
-        .map(p => ({ ...p, distance_km: calculateDistance(userLat, userLon, p.latitude, p.longitude) }))
+        .map(p => ({ ...p, distance_km: calculateDistance(baseLat, baseLon, p.latitude, p.longitude) }))
         .sort((a, b) => {
           const distA = a.distance_km || 0;
           const distB = b.distance_km || 0;
