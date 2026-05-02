@@ -243,7 +243,7 @@ class BatchProcessor {
 
     // Try models in sequence
     let lastError: any = null;
-    const attemptedModels = [];
+    const attemptedModels: string[] = [];
 
     for (const model of MODELS) {
       try {
