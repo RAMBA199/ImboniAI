@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 
 import chatRouter from './routes/chat';
@@ -15,6 +14,8 @@ import { clearResponseCache, getCacheStats, getBatchProcessorStats } from './ser
 import { testConnection, getOrCreateDemoUser } from './db';
 import { seedPlaces, seedBusinesses } from './db/seed';
 
+// Load environment variables
+const dotenv = require('dotenv');
 dotenv.config();
 
 const app = express();

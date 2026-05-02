@@ -1,0 +1,123 @@
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+
+export const api = axios.create({
+  baseURL: API_URL,
+  timeout: 30000,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+export async function fetchPlaces(params?: {
+  category?: string;
+  lat?: number;
+  lon?: number;
+  search?: string;
+  limit?: number;
+}) {
+  // Add cache-busting timestamp to ensure fresh data on every call
+  const paramsWithCacheBust = {
+    ...params,
+    _t: Date.now(), // Cache buster
+  };
+  const { data } = await api.get('/places', { params: paramsWithCacheBust });
+  return data; // Return { places, total, message }
+}
+
+export async function sendChatMessage(payload: {
+  message: string;
+  session_id: string;
+  language?: string;
+  user_preferences?: string[];
+  simple_mode?: boolean;
+  user_lat?: number;
+  user_lon?: number;
+}) {
+  const { data } = await api.post('/chat', payload);
+  return data;
+}
+
+export async function transcribeVoice(audioData: string, mimeType: string, language: string = 'en') {
+  const { data } = await api.post('/voice', { audio_data: audioData, mime_type: mimeType, language });
+  return data;
+}
+
+export async function savePreferences(prefs: {
+  user_id: string;
+  interests: string[];
+  language: string;
+  simple_mode: boolean;
+}) {
+  const { data } = await api.post('/preferences', prefs);
+  return data;
+}
+
+export async function loginUser(payload: { email: string; password: string }) {
+  const { data } = await api.post('/auth/login', payload);
+  return data;
+}
+
+export async function registerUser(payload: {
+  name: string;
+  username: string;
+  email: string;
+  password: string;
+  profilePic?: string;
+}) {
+  const { data } = await api.post('/auth/register', payload);
+  return data;
+}
+
+export async function fetchUserProfile(userId: string) {
+  const { data } = await api.get('/auth/profile', { params: { userId } });
+  return data;
+}
+
+export async function updateUserProfile(payload: {
+  userId: string;
+  name?: string;
+  username?: string;
+  email?: string;
+  password?: string;
+  profilePic?: string;
+}) {
+  const { data } = await api.put('/auth/profile', payload);
+  return data;
+}
+
+export async function deleteUserAccount(payload: { userId: string }) {
+  const { data } = await api.delete('/auth/profile', { data: payload });
+  return data;
+}
+
+export async function registerBusiness(payload: {
+  name: string;
+  address: string;
+  businessType: string;
+  businessFeel: string;
+  menus: string;
+  plan: string;
+}) {
+  const { data } = await api.post('/businesses/register', payload);
+  return data;
+}
+
+export async function fetchHiddenGems(params?: {
+  search?: string;
+  lat?: number;
+  lon?: number;
+  limit?: number;
+}) {
+  const { data } = await api.get('/businesses/hidden', {
+    params: {
+      ...params,
+      _t: Date.now(),
+    },
+  });
+  return data;
+}
+
+export async function logoutUser() {
+  const { data } = await api.post('/auth/logout');
+  return data;
+}

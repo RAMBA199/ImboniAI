@@ -1,0 +1,201 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  font-family: 'DM Sans', sans-serif;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+@keyframes authShake {
+  0% { transform: translateX(0); }
+  15% { transform: translateX(-6px); }
+  30% { transform: translateX(6px); }
+  45% { transform: translateX(-4px); }
+  60% { transform: translateX(2px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes authNod {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.auth-form-shell {
+  display: flex;
+  justify-content: center;
+  padding: 3rem 1rem 1rem;
+}
+
+.auth-form-card {
+  max-width: 560px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem;
+  border-radius: 28px;
+  box-shadow: 0 32px 80px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(18px);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.auth-form-card:hover {
+  box-shadow: 0 40px 100px rgba(15, 23, 42, 0.12);
+}
+
+.auth-input-wrapper {
+  position: relative;
+  transition: transform 0.25s ease, border-color 0.25s ease, background-color 0.25s ease;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+.dark .auth-input-wrapper {
+  background: rgba(8, 16, 30, 0.78);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.auth-input-wrapper.input-focused {
+  animation: authNod 0.35s ease forwards;
+  transform-origin: center top;
+  border-color: #5b6bff;
+}
+
+.auth-input {
+  border: none;
+  border-radius: 18px;
+  padding: 1rem 1.15rem;
+  font-size: 1rem;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  width: 100%;
+  color: inherit;
+}
+
+.auth-input::placeholder {
+  color: #94a3b8;
+}
+
+.auth-input-label {
+  margin-bottom: 0.65rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.dark .auth-input-label {
+  color: #cbd5e1;
+}
+
+.auth-input-nod {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #5b6bff;
+  opacity: 0.7;
+  transform: translateY(-50%);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.auth-input-wrapper.input-focused .auth-input-nod {
+  transform: translateY(-50%) scale(1.15);
+  opacity: 1;
+}
+
+.auth-input-hint {
+  margin-top: 0.4rem;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.dark .auth-input-hint {
+  color: #94a3b8;
+}
+
+.auth-action-button {
+  min-width: 150px;
+  border-radius: 16px;
+  letter-spacing: 0.01em;
+  box-shadow: 0 12px 30px rgba(25, 42, 70, 0.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.2s ease;
+}
+
+.auth-action-button.button-valid:hover {
+  transform: translateY(-1px);
+}
+
+.auth-action-button.button-reactive:hover {
+  cursor: pointer;
+}
+
+.auth-action-button.shake {
+  animation: authShake 0.45s ease-in-out;
+}
+
+.auth-secondary-button {
+  border-radius: 16px;
+  border-color: rgba(91, 107, 255, 0.22);
+  color: #475569;
+}
+
+.auth-secondary-button:hover {
+  transform: translateY(-1px);
+}
+
+.auth-message {
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.dark .auth-message {
+  color: #cbd5e1;
+}
+
+/* Chat messages animation */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.message-enter {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Pulse animation for recording */
+@keyframes recordPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50% { transform: scale(1.05); box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+}
+
+.recording-pulse {
+  animation: recordPulse 1.5s ease-in-out infinite;
+}
+
+/* Card hover effect */
+.place-card:hover {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Smooth transitions */
+.chakra-ui-light, .chakra-ui-dark {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}

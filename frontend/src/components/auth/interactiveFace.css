@@ -1,0 +1,87 @@
+.face-card {
+  width: 220px;
+  height: 220px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #e2e8f0 0%, #f8fafc 100%);
+  box-shadow: inset -18px -24px 48px rgba(96, 165, 250, 0.12), 0 26px 60px rgba(15, 23, 42, 0.14);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.face-eyes {
+  display: flex;
+  justify-content: space-between;
+  width: 60%;
+  margin-bottom: 20px;
+}
+
+.face-eye {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #1e293b;
+  transition: transform 0.2s ease;
+}
+
+.face-mouth {
+  width: 92px;
+  height: 54px;
+  border-radius: 80px / 40px;
+  background: transparent;
+  border-bottom: 8px solid #1e293b;
+  transition: transform 0.24s ease, border-color 0.24s ease, opacity 0.24s ease;
+}
+
+.face-idle {
+  transform: translateY(0);
+}
+
+.face-idle .face-eye {
+  transform: scale(1);
+}
+
+.face-idle .face-mouth {
+  opacity: 1;
+}
+
+.face-typing {
+  animation: float 2.2s ease-in-out infinite;
+}
+
+.face-typing .face-eye {
+  transform: translateY(-2px) scale(0.98);
+}
+
+.face-typing .face-mouth {
+  transform: scaleX(0.95) translateY(2px);
+}
+
+.face-happy .face-mouth {
+  border-bottom-color: #2563eb;
+  transform: scaleX(1.2) translateY(-4px);
+  border-radius: 100px / 80px;
+}
+
+.face-success .face-mouth {
+  border-bottom-color: #16a34a;
+  transform: scaleX(1.3) translateY(-6px);
+}
+
+.face-concerned .face-eye {
+  transform: translateY(4px) scale(0.9);
+}
+
+.face-concerned .face-mouth {
+  transform: scaleX(0.9) translateY(8px);
+  border-bottom-color: #dc2626;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
