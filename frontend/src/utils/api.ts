@@ -1,9 +1,14 @@
 import axios from 'axios';
 
-const API_URL =
+let API_URL =
   import.meta.env.VITE_API_URL ||
   import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.PROD ? 'https://imboniai.onrender.com' : '');
+
+// Normalize API_URL to not end with /api
+if (API_URL.endsWith('/api')) {
+  API_URL = API_URL.slice(0, -4);
+}
 
 export const api = axios.create({
   baseURL: API_URL,
