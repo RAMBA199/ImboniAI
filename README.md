@@ -149,6 +149,11 @@ Edit `.env`:
 VITE_API_URL=http://localhost:5000/api
 ```
 
+For production on Vercel, set:
+```env
+VITE_API_URL=https://imboniai.onrender.com/api
+```
+
 #### Start the frontend
 
 ```bash
