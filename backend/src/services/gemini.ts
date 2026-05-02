@@ -262,7 +262,7 @@ class BatchProcessor {
       }
     }
 
-  
+    // All models failed - use fallback response
     console.error('All models failed. Last error:', lastError);
     const errorMessage = lastError?.message || 'unknown error';
 
