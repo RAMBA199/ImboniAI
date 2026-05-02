@@ -1,0 +1,103 @@
+# =========================
+# 🔐 Environment variables
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# 📦 Dependencies
+# =========================
+node_modules/
+.pnpm-store/
+.npm/
+
+# =========================
+# 🏗 Build outputs
+# =========================
+dist/
+build/
+.next/
+out/
+coverage/
+
+# =========================
+# ⚡ Vite / React / TS
+# =========================
+vite.svg
+*.tsbuildinfo
+
+# =========================
+# 🎨 Tailwind / Cache
+# =========================
+.cache/
+.tailwind/
+
+# =========================
+# 🧠 Logs & debug
+# =========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# =========================
+# 💻 OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# 🧪 Testing
+# =========================
+coverage/
+jest-cache/
+test-results/
+
+# =========================
+# 🛠 IDE / Editor
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# 🔑 MongoDB / DB
+# =========================
+*.db
+*.sqlite
+*.sqlite3
+dump/
+mongo-data/
+
+# =========================
+# 🔥 Node / Backend
+# =========================
+uploads/
+tmp/
+temp/
+
+# =========================
+# 🚀 Deployment
+# =========================
+.vercel/
+.netlify/
+docker-compose.override.yml
+
+# =========================
+# 🔒 Security (VERY IMPORTANT)
+# =========================
+*.pem
+*.key
+*.crt
+*.p12
+
+# =========================
+# 🧾 Misc
+# =========================
+*.zip
+*.tar
+*.gz
+*.rar
