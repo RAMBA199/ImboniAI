@@ -146,12 +146,12 @@ cp .env.example .env
 
 Edit `.env`:
 ```env
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:5000
 ```
 
 For production on Vercel, set:
 ```env
-VITE_API_URL=https://imboniai.onrender.com/api
+VITE_API_URL=https://imboniai.onrender.com
 ```
 
 #### Start the frontend

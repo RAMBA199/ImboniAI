@@ -3,7 +3,7 @@ import axios from 'axios';
 const API_URL =
   import.meta.env.VITE_API_URL ||
   import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.PROD ? 'https://imboniai.onrender.com/api' : '/api');
+  (import.meta.env.PROD ? 'https://imboniai.onrender.com' : '');
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -23,7 +23,7 @@ export async function fetchPlaces(params?: {
     ...params,
     _t: Date.now(), // Cache buster
   };
-  const { data } = await api.get('/places', { params: paramsWithCacheBust });
+  const { data } = await api.get('/api/places', { params: paramsWithCacheBust });
   return data; // Return { places, total, message }
 }
 
@@ -36,12 +36,12 @@ export async function sendChatMessage(payload: {
   user_lat?: number;
   user_lon?: number;
 }) {
-  const { data } = await api.post('/chat', payload);
+  const { data } = await api.post('/api/chat', payload);
   return data;
 }
 
 export async function transcribeVoice(audioData: string, mimeType: string, language: string = 'en') {
-  const { data } = await api.post('/voice', { audio_data: audioData, mime_type: mimeType, language });
+  const { data } = await api.post('/api/voice', { audio_data: audioData, mime_type: mimeType, language });
   return data;
 }
 
@@ -51,12 +51,12 @@ export async function savePreferences(prefs: {
   language: string;
   simple_mode: boolean;
 }) {
-  const { data } = await api.post('/preferences', prefs);
+  const { data } = await api.post('/api/preferences', prefs);
   return data;
 }
 
 export async function loginUser(payload: { email: string; password: string }) {
-  const { data } = await api.post('/auth/login', payload);
+  const { data } = await api.post('/api/auth/login', payload);
   return data;
 }
 
@@ -67,12 +67,12 @@ export async function registerUser(payload: {
   password: string;
   profilePic?: string;
 }) {
-  const { data } = await api.post('/auth/register', payload);
+  const { data } = await api.post('/api/auth/register', payload);
   return data;
 }
 
 export async function fetchUserProfile(userId: string) {
-  const { data } = await api.get('/auth/profile', { params: { userId } });
+  const { data } = await api.get('/api/auth/profile', { params: { userId } });
   return data;
 }
 
@@ -84,12 +84,12 @@ export async function updateUserProfile(payload: {
   password?: string;
   profilePic?: string;
 }) {
-  const { data } = await api.put('/auth/profile', payload);
+  const { data } = await api.put('/api/auth/profile', payload);
   return data;
 }
 
 export async function deleteUserAccount(payload: { userId: string }) {
-  const { data } = await api.delete('/auth/profile', { data: payload });
+  const { data } = await api.delete('/api/auth/profile', { data: payload });
   return data;
 }
 
@@ -101,7 +101,7 @@ export async function registerBusiness(payload: {
   menus: string;
   plan: string;
 }) {
-  const { data } = await api.post('/businesses/register', payload);
+  const { data } = await api.post('/api/businesses/register', payload);
   return data;
 }
 
@@ -111,7 +111,7 @@ export async function fetchHiddenGems(params?: {
   lon?: number;
   limit?: number;
 }) {
-  const { data } = await api.get('/businesses/hidden', {
+  const { data } = await api.get('/api/businesses/hidden', {
     params: {
       ...params,
       _t: Date.now(),
@@ -121,6 +121,6 @@ export async function fetchHiddenGems(params?: {
 }
 
 export async function logoutUser() {
-  const { data } = await api.post('/auth/logout');
+  const { data } = await api.post('/api/auth/logout');
   return data;
 }
