@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { generateChatResponse } from '../services/gemini';
 import { searchPlaces, STATIC_PLACES } from '../services/places';
-import { searchBusinesses } from '../services/businesses';
-import { LocationLink } from '../types';
+import { searchBusinesses, getHiddenGems } from '../services/businesses';
+import { LocationLink, Place } from '../types';
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -125,7 +125,7 @@ router.post('/', async (req: Request, res: Response) => {
       return `"${p.name}" (${p.category}, ${p.address}, rating: ${p.rating}${distStr})`;
     }).join(', ');
 
-    const hiddenGemContext = hiddenGems.slice(0, 3).map(p => {
+    const hiddenGemContext = hiddenGems.slice(0, 3).map((p: Place) => {
       const distStr = p.distance_km != null ? `, ${p.distance_km} km away` : '';
       return `"${p.name}" (${p.category}, ${p.address}${distStr})`;
     }).join(', ');
