@@ -50,10 +50,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
 
     try {
       if (mode === 'login') {
-        const { data } = await api.post('/auth/login', { email, password });
+        const { data } = await api.post('/api/auth/login', { email, password });
         onLogin(data.user);
       } else {
-        const { data } = await api.post('/auth/register', { name, email, username, password, profilePic });
+        const { data } = await api.post('/api/auth/register', { name, email, username, password, profilePic });
         onLogin(data.user);
       }
       setStatus('success');

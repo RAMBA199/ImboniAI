@@ -5,6 +5,7 @@ import { searchBusinesses, getHiddenGems } from '../services/businesses';
 import { LocationLink, Place } from '../types';
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
+import { sendDetailedError, handleError } from '../utils/errorHandler';
 
 const router = Router();
 
@@ -180,21 +181,22 @@ router.post('/', async (req: Request, res: Response) => {
     const message = error?.message || 'Failed to generate response';
     const isServiceUnavailable = message.includes('AI service temporarily unavailable');
 
-    return res.status(isServiceUnavailable ? 503 : 500).json({
-      error: message,
-      session_id: sessionId,
-    });
+    return handleError(error, res, req, isServiceUnavailable ? 503 : 500);
   }
 });
 
 // Get chat history
 router.get('/history/:sessionId', async (req: Request, res: Response) => {
   const { sessionId } = req.params;
+  if (!sessionId) {
+    return sendDetailedError(res, 400, 'Missing session ID', req, 'sessionId parameter is required');
+  }
   try {
     const history = await getChatHistory(sessionId);
     res.json({ messages: history, session_id: sessionId });
-  } catch (error) {
-    res.json({ messages: [], session_id: sessionId });
+  } catch (error: any) {
+    console.error('Chat history error:', error);
+    return handleError(error, res, req);
   }
 });
 

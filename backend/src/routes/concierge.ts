@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { generateConciergeRecommendations } from '../services/concierge';
+import { sendDetailedError, handleError } from '../utils/errorHandler';
 
 const router = Router();
 
@@ -23,9 +24,7 @@ router.post('/recommend', async (req: Request, res: Response) => {
 
     // Validate that at least some preferences are provided
     if (!userPreferences || Object.keys(userPreferences).length === 0) {
-      return res.status(400).json({
-        error: 'Please provide at least one preference (interests, budget, mood, etc.)',
-      });
+      return sendDetailedError(res, 400, 'Missing preferences', req, 'At least one preference (interests, budget, mood, etc.) is required');
     }
 
     // Generate recommendations
@@ -38,10 +37,7 @@ router.post('/recommend', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Concierge recommendation error:', error);
-    return res.status(500).json({
-      error: 'Unable to generate recommendations. Please try again.',
-      details: error.message,
-    });
+    return handleError(error, res, req);
   }
 });
 
@@ -54,9 +50,7 @@ router.post('/quick', async (req: Request, res: Response) => {
     const { mood, budget } = req.body;
 
     if (!mood && !budget) {
-      return res.status(400).json({
-        error: 'Please provide at least a mood or budget preference',
-      });
+      return sendDetailedError(res, 400, 'Insufficient input', req, 'Please provide at least mood or budget preference');
     }
 
     const userPreferences = {
@@ -74,9 +68,7 @@ router.post('/quick', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Quick recommendation error:', error);
-    return res.status(500).json({
-      error: 'Unable to generate quick recommendations.',
-    });
+    return handleError(error, res, req);
   }
 });
 
@@ -101,7 +93,10 @@ router.get('/trending', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Trending events error:', error);
-    return res.status(500).json({
+    return handleError(error, res, req);
+  }
+});
+
       error: 'Unable to fetch trending events.',
     });
   }

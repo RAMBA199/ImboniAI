@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+import { sendDetailedError, handleError } from '../utils/errorHandler';
 
 const router = Router();
 const HASH_ITERATIONS = 120000;
@@ -23,22 +24,25 @@ router.post('/register', async (req: Request, res: Response) => {
   const { name, email, username, password, profilePic } = req.body;
 
   if (!name || !email || !username || !password) {
-    return res.status(400).json({ error: 'Name, email, username and password are required.' });
+    return sendDetailedError(res, 400, 'Missing required fields', req, 'name, email, username, and password are all required');
   }
 
   try {
     const db = mongoose.connection.db;
-    if (!db) throw new Error('Database not connected');
+    if (!db) {
+      return sendDetailedError(res, 503, 'Database connection failed', req, 'MongoDB is not connected');
+    }
 
     const users = db.collection<any>('users');
     const existingCount = await users.countDocuments({ authSource: 'local' });
     if (existingCount >= 5) {
-      return res.status(403).json({ error: 'Account limit reached. Only 5 users may be created during this testing phase.' });
+      return sendDetailedError(res, 403, 'Account limit reached', req, 'Maximum 5 test accounts allowed during this phase');
     }
 
     const existingUser = await users.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
-      return res.status(409).json({ error: 'Email or username already exists.' });
+      const conflict = existingUser.email === email ? 'email' : 'username';
+      return sendDetailedError(res, 409, 'Registration conflict', req, `${conflict} is already registered`);
     }
 
     const { salt, hash } = hashPassword(password);
@@ -72,30 +76,32 @@ router.post('/register', async (req: Request, res: Response) => {
         preferences: newUser.preferences,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Auth register error:', error);
-    return res.status(500).json({ error: 'Unable to register user.' });
+    return handleError(error, res, req);
   }
 });
 
 router.post('/login', async (req: Request, res: Response) => {
   const { email, password } = req.body;
   if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required.' });
+    return sendDetailedError(res, 400, 'Missing credentials', req, 'email and password are required');
   }
 
   try {
     const db = mongoose.connection.db;
-    if (!db) throw new Error('Database not connected');
+    if (!db) {
+      return sendDetailedError(res, 503, 'Database connection failed', req, 'MongoDB is not connected');
+    }
 
     const users = db.collection<any>('users');
     const user = await users.findOne({ email, authSource: 'local' });
     if (!user) {
-      return res.status(401).json({ error: 'Invalid email or password.' });
+      return sendDetailedError(res, 401, 'Authentication failed', req, `No user found with email: ${email}`);
     }
 
     if (!verifyPassword(password, user.passwordSalt, user.passwordHash)) {
-      return res.status(401).json({ error: 'Invalid email or password.' });
+      return sendDetailedError(res, 401, 'Authentication failed', req, 'Password does not match');
     }
 
     return res.json({
@@ -108,9 +114,9 @@ router.post('/login', async (req: Request, res: Response) => {
         preferences: user.preferences || { interests: [], language: 'en', simpleMode: false },
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Auth login error:', error);
-    return res.status(500).json({ error: 'Unable to sign in.' });
+    return handleError(error, res, req);
   }
 });
 

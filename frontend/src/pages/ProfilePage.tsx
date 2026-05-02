@@ -36,7 +36,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdateProfile, onLogo
     setStatus('typing');
     setMessage('Saving profile updates...');
     try {
-      const { data } = await api.put('/auth/profile', {
+      const { data } = await api.put('/api/auth/profile', {
         userId: user.id,
         name,
         username,
@@ -65,7 +65,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdateProfile, onLogo
     setMessage('Deleting account...');
 
     try {
-      await api.delete('/auth/profile', { data: { userId: user.id } });
+      await api.delete('/api/auth/profile', { data: { userId: user.id } });
       setStatus('success');
       setMessage('Account deleted. Redirecting to login...');
       onDeleteAccount();
