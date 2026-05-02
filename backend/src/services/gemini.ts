@@ -257,7 +257,7 @@ class BatchProcessor {
         const errorMsg = error?.message || 'unknown error';
         console.warn(`Model ${model} failed:`, errorMsg);
 
-        // Continue to next model
+        
         continue;
       }
     }
