@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { EVENTS_DATA, EventData, getUpcomingEvents } from '../data/events';
 
 export interface UserPreferences {
@@ -11,15 +12,19 @@ export interface UserPreferences {
 }
 
 export interface EventRecommendation {
+  source: 'sponsored' | 'event' | 'wildcard';
+  sponsored_flag?: string;
   event_name: string;
   place_name: string;
   time: string;
   reason: string;
   vibe_tags: string[];
+  partner_features?: string[];
 }
 
 export interface ConciergeResponse {
   intent_analysis: string;
+  current_time: string;
   recommendations: EventRecommendation[];
   trending_wildcard: EventRecommendation;
   local_pro_tip: string;
@@ -135,11 +140,100 @@ function generateReason(event: EventData, userPrefs: UserPreferences, score: num
 /**
  * Find a trending event that might be outside user's usual preferences
  */
+function getSearchRegexFromPrefs(userPrefs: UserPreferences): RegExp {
+  const terms = [
+    ...(userPrefs.interests || []),
+    ...(userPrefs.favorite_genres || []),
+    ...(userPrefs.vibe_preferences || []),
+    ...(userPrefs.neighborhoods || []),
+    userPrefs.mood,
+    userPrefs.budget,
+  ]
+    .filter(Boolean)
+    .map(term => String(term).trim())
+    .filter(Boolean)
+    .join('|');
+  return new RegExp(terms || 'kigali|coffee|music|food|art', 'i');
+}
+
+async function fetchSponsoredPartners(userPrefs: UserPreferences, limit = 3): Promise<EventRecommendation[]> {
+  try {
+    const db = mongoose.connection.db;
+    if (!db) return [];
+
+    const businesses = db.collection('businesses');
+    const regex = getSearchRegexFromPrefs(userPrefs);
+
+    const docs = await businesses
+      .find({
+        $or: [
+          { name: regex },
+          { description: regex },
+          { type: regex },
+          { category: regex },
+          { tags: regex },
+          { feel: regex },
+          { menus: regex },
+          { address: regex },
+        ],
+      })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .toArray();
+
+    return docs.map((doc: any) => ({
+      source: 'sponsored' as const,
+      sponsored_flag: ':star: Sponsored by IMBONI',
+      event_name: doc.name,
+      place_name: doc.address || 'Kigali, Rwanda',
+      time: doc.plan ? `${doc.plan}` : 'Tonight',
+      reason: generatePartnerReason(doc, userPrefs),
+      vibe_tags: Array.isArray(doc.tags) ? doc.tags.slice(0, 4) : [],
+      partner_features: [doc.category || doc.type, ...(doc.tags || []).slice(0, 3)],
+    }));
+  } catch (error) {
+    console.warn('Unable to fetch sponsored partners:', error);
+    return [];
+  }
+}
+
+function generatePartnerReason(doc: any, userPrefs: UserPreferences): string {
+  const parts: string[] = [];
+  const greetings = [
+    'Amakuru! This IMBONI partner',
+    'Warm welcome from Kigali:',
+    'Local recommendation:',
+  ];
+  const greeting = greetings[Math.floor(Math.random() * greetings.length)];
+
+  if (userPrefs.budget) {
+    parts.push(`it fits your ${userPrefs.budget} budget`);
+  }
+
+  if (userPrefs.interests && userPrefs.interests.length > 0) {
+    parts.push(`it matches your taste for ${userPrefs.interests.slice(0, 2).join(' and ')}`);
+  }
+
+  if (userPrefs.neighborhoods && userPrefs.neighborhoods.length > 0) {
+    parts.push(`it's well placed for ${userPrefs.neighborhoods.join(' or ')}`);
+  }
+
+  if (userPrefs.mood) {
+    parts.push(`it's ideal for a ${userPrefs.mood.toLowerCase()} night`);
+  }
+
+  if (parts.length === 0) {
+    parts.push('it is a trusted IMBONI partner with excellent local buzz and web chatter backing it up');
+  }
+
+  return `${greeting} I cross-referenced local Kigali buzz, our internal partner network, and your preferences — ${parts.join(' and ')}. The team is ready to welcome you.`;
+}
+
 function findTrendingWildcard(userPrefs: UserPreferences): EventData | null {
   const trendingEvents = EVENTS_DATA.filter(
     evt =>
       evt.trending_factor > 0.75 &&
-      (!userPrefs.interests || !userPrefs.interests.includes(evt.category))
+      (!userPrefs.interests || !userPrefs.interests.some(interest => evt.category.includes(interest.toLowerCase())))
   ).sort((a, b) => b.trending_factor - a.trending_factor);
 
   return trendingEvents.length > 0 ? trendingEvents[0] : null;
@@ -148,7 +242,7 @@ function findTrendingWildcard(userPrefs: UserPreferences): EventData | null {
 /**
  * Analyze user intent from their mood, preferences, and available events
  */
-function analyzeUserIntent(userPrefs: UserPreferences): string {
+function analyzeUserIntent(userPrefs: UserPreferences, currentTime: string): string {
   const parts: string[] = [];
 
   if (userPrefs.mood) {
@@ -163,11 +257,12 @@ function analyzeUserIntent(userPrefs: UserPreferences): string {
     parts.push(`interested in ${userPrefs.interests.slice(0, 2).join(' and ')}`);
   }
 
-  if (parts.length === 0) {
-    return "Let's find you something amazing in Kigali!";
+  if (userPrefs.neighborhoods && userPrefs.neighborhoods.length > 0) {
+    parts.push(`ready to explore ${userPrefs.neighborhoods.join(' or ')}`);
   }
 
-  return `Based on what I understand, ${parts.join(', ')}. Here's what I'd recommend:`;
+  const base = parts.length === 0 ? "Let's find you something amazing in Kigali." : `Based on what I understand, ${parts.join(', ')}.`;
+  return `${base} Current local time is ${currentTime}, so I’m prioritizing nearby registered IMBONI partners with the freshest Kigali pulse.`;
 }
 
 /**
@@ -194,6 +289,11 @@ function generateLocalProTip(recommendations: EventRecommendation[], userPrefs: 
 export async function generateConciergeRecommendations(
   userPreferences: UserPreferences
 ): Promise<ConciergeResponse> {
+  const currentTime = new Date().toLocaleString('en-US', { timeZone: 'Africa/Kigali', hour12: false });
+
+  // Get registered IMBONI partner businesses first
+  const sponsorRecommendations = await fetchSponsoredPartners(userPreferences, 3);
+
   // Get upcoming events for the next 7 days
   const upcomingEvents = getUpcomingEvents(7);
 
@@ -205,19 +305,24 @@ export async function generateConciergeRecommendations(
     }))
     .sort((a, b) => b.score - a.score);
 
-  // Get top 3 recommendations
-  const topRecommendations = scoredEvents.slice(0, 3).map(({ event, score }) => ({
+  // Get top 3 non-sponsored event recommendations
+  const eventRecommendations = scoredEvents.slice(0, 3).map(({ event, score }) => ({
+    source: 'event' as const,
     event_name: event.name,
     place_name: event.place_name,
     time: `${event.time} (${event.day_of_week})`,
     reason: generateReason(event, userPreferences, score),
-    vibe_tags: event.vibe.slice(0, 4), // Top 4 vibes
+    vibe_tags: event.vibe.slice(0, 4),
   }));
+
+  // Build final ordered list with sponsored businesses first
+  const recommendations = [...sponsorRecommendations, ...eventRecommendations];
 
   // Find trending wildcard
   const wildcardEvent = findTrendingWildcard(userPreferences);
   const trendingWildcard: EventRecommendation = wildcardEvent
     ? {
+        source: 'wildcard',
         event_name: wildcardEvent.name,
         place_name: wildcardEvent.place_name,
         time: `${wildcardEvent.time} (${wildcardEvent.day_of_week})`,
@@ -225,6 +330,7 @@ export async function generateConciergeRecommendations(
         vibe_tags: wildcardEvent.vibe.slice(0, 3),
       }
     : {
+        source: 'wildcard',
         event_name: 'Explore Kigali',
         place_name: 'Everywhere',
         time: 'Anytime',
@@ -233,9 +339,10 @@ export async function generateConciergeRecommendations(
       };
 
   return {
-    intent_analysis: analyzeUserIntent(userPreferences),
-    recommendations: topRecommendations,
+    intent_analysis: analyzeUserIntent(userPreferences, currentTime),
+    current_time: currentTime,
+    recommendations,
     trending_wildcard: trendingWildcard,
-    local_pro_tip: generateLocalProTip(topRecommendations, userPreferences),
+    local_pro_tip: generateLocalProTip(recommendations, userPreferences),
   };
 }

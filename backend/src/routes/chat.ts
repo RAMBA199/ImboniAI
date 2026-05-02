@@ -181,7 +181,8 @@ router.post('/', async (req: Request, res: Response) => {
     const message = error?.message || 'Failed to generate response';
     const isServiceUnavailable = message.includes('AI service temporarily unavailable');
 
-    return handleError(error, res, req, isServiceUnavailable ? 503 : 500);
+    error.status = isServiceUnavailable ? 503 : 500;
+    return handleError(error, res, req);
   }
 });
 

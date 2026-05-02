@@ -31,8 +31,7 @@ router.post('/recommend', async (req: Request, res: Response) => {
     const recommendations = await generateConciergeRecommendations(userPreferences);
 
     return res.json({
-      message: 'Recommendations generated successfully',
-      data: recommendations,
+      ...recommendations,
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
@@ -62,8 +61,7 @@ router.post('/quick', async (req: Request, res: Response) => {
     const recommendations = await generateConciergeRecommendations(userPreferences);
 
     return res.json({
-      message: 'Quick recommendations ready!',
-      data: recommendations,
+      ...recommendations,
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
@@ -94,11 +92,6 @@ router.get('/trending', async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Trending events error:', error);
     return handleError(error, res, req);
-  }
-});
-
-      error: 'Unable to fetch trending events.',
-    });
   }
 });
 
