@@ -1,5 +1,5 @@
 import React from 'react';
-import './interactiveFace.css';
+import './InteractiveFace.css';
 
 interface InteractiveFaceProps {
   mood: 'idle' | 'typing' | 'happy' | 'concerned' | 'success';
