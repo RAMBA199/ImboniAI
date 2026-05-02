@@ -163,6 +163,23 @@ export async function getPlaces(
     const query = category && category !== 'all' ? { category } : {};
     const docs = await places.find(query).toArray();
 
+    if (!docs || docs.length === 0) {
+      console.warn('No DB places found, falling back to static Kigali dataset');
+      let fallbackPlaces = STATIC_PLACES;
+      if (category && category !== 'all') {
+        fallbackPlaces = fallbackPlaces.filter(p => p.category === category);
+      }
+      return fallbackPlaces
+        .map(p => ({ ...p, distance_km: calculateDistance(userLat, userLon, p.latitude, p.longitude) }))
+        .sort((a, b) => {
+          const distA = a.distance_km || 0;
+          const distB = b.distance_km || 0;
+          const randomFactor = (Math.random() - 0.5) * 0.1;
+          return (distA + randomFactor) - (distB + randomFactor);
+        })
+        .slice(0, limit);
+    }
+
     return docs
       .map((p: any) => ({
         id: p._id,
@@ -221,6 +238,8 @@ export async function getPlaces(
 }
 
 export async function searchPlaces(query: string, userLat = -1.9441, userLon = 30.0619): Promise<Place[]> {
+  const searchLower = query.toLowerCase();
+
   try {
     const db = mongoose.connection.db;
     if (!db) throw new Error('Database not connected');
@@ -235,6 +254,24 @@ export async function searchPlaces(query: string, userLat = -1.9441, userLon = 3
         { tags: searchRegex },
       ],
     }).toArray();
+
+    if (!docs || docs.length === 0) {
+      console.warn('No DB search matches found, falling back to static Kigali dataset');
+      const staticMatches = STATIC_PLACES.filter(p =>
+        p.name.toLowerCase().includes(searchLower) ||
+        p.description.toLowerCase().includes(searchLower) ||
+        p.category.toLowerCase().includes(searchLower) ||
+        p.tags.some(t => t.toLowerCase().includes(searchLower))
+      );
+      return staticMatches
+        .map(p => ({ ...p, distance_km: calculateDistance(userLat, userLon, p.latitude, p.longitude) }))
+        .sort((a, b) => {
+          const distA = a.distance_km || 0;
+          const distB = b.distance_km || 0;
+          const randomFactor = (Math.random() - 0.5) * 0.1;
+          return (distA + randomFactor) - (distB + randomFactor);
+        });
+    }
 
     return docs.map((p: any) => ({
       id: p._id,
