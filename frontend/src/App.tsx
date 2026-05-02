@@ -19,6 +19,13 @@ const DEFAULT_PREFS: UserPreferences = {
   simpleMode: false,
 };
 
+type BeforeInstallPromptOutcome = 'accepted' | 'dismissed';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: BeforeInstallPromptOutcome; platform: string }>;
+}
+
 const App: React.FC = () => {
   const [activePage, setActivePage] = useState<'auth' | 'explore' | 'chat' | 'pricing' | 'analytics' | 'profile' | 'dictionary'>('auth');
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFS);
@@ -28,6 +35,8 @@ const App: React.FC = () => {
   const [hasActiveBusiness, setHasActiveBusiness] = useState(false);
   const { isOpen: isVoiceOpen, onOpen: onVoiceOpen, onClose: onVoiceClose } = useDisclosure();
   const [aiDataSource, setAiDataSource] = useState<'database' | 'static'>('static');
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [canInstall, setCanInstall] = useState(false);
 
   const bg = useColorModeValue('#f0f4f8', '#0f1923');
 
@@ -66,6 +75,29 @@ const App: React.FC = () => {
     if (!seen && userId) {
       setShowOnboarding(true);
     }
+  }, []);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setDeferredInstallPrompt(event as BeforeInstallPromptEvent);
+      setCanInstall(true);
+      console.log('PWA install prompt is available');
+    };
+
+    const handleAppInstalled = () => {
+      setDeferredInstallPrompt(null);
+      setCanInstall(false);
+      console.log('Imboni installed');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, []);
 
   const handleLogin = (signedUser: UserProfile) => {
@@ -186,6 +218,19 @@ const App: React.FC = () => {
     onVoiceClose();
   };
 
+  const handleInstallClick = async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const choice = await deferredInstallPrompt.userChoice;
+    if (choice.outcome === 'accepted') {
+      console.log('User accepted the Imboni install prompt');
+    } else {
+      console.log('User dismissed the Imboni install prompt');
+    }
+    setDeferredInstallPrompt(null);
+    setCanInstall(false);
+  };
+
   if (!user) {
     return (
       <Box minH="100vh" bg={bg}>
@@ -221,6 +266,8 @@ const App: React.FC = () => {
             onLogout={handleLogout}
             aiDataSource={aiDataSource}
             hasActiveBusiness={hasActiveBusiness}
+            canInstall={canInstall}
+            onInstallClick={handleInstallClick}
           />
 
           <Box as="main">

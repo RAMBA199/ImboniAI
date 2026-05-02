@@ -12,17 +12,20 @@
     {
       "src": "/favicon.svg",
       "type": "image/svg+xml",
-      "sizes": "any"
+      "sizes": "any",
+      "purpose": "any maskable"
     },
     {
       "src": "/favicon.svg",
       "type": "image/svg+xml",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any"
     },
     {
       "src": "/favicon.svg",
       "type": "image/svg+xml",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any"
     }
   ]
 }

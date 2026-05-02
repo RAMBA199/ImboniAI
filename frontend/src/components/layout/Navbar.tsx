@@ -21,6 +21,8 @@ interface NavbarProps {
   onLogout: () => void;
   aiDataSource?: 'database' | 'static';
   hasActiveBusiness?: boolean;
+  canInstall?: boolean;
+  onInstallClick?: () => void;
 }
 
 const MOCK_NOTIFICATIONS = [
@@ -30,7 +32,7 @@ const MOCK_NOTIFICATIONS = [
   { id: '4', text: 'Your area has 3 new highly-rated places', time: '1d ago', read: true },
 ];
 
-const Navbar: React.FC<NavbarProps> = ({ preferences, onUpdatePreferences, activePage, onPageChange, user, onProfileClick, onLogout, aiDataSource, hasActiveBusiness }) => {
+const Navbar: React.FC<NavbarProps> = ({ preferences, onUpdatePreferences, activePage, onPageChange, user, onProfileClick, onLogout, aiDataSource, hasActiveBusiness, canInstall, onInstallClick }) => {
   const { colorMode, toggleColorMode } = useColorMode();
   const { isOpen: isHelpOpen, onOpen: onHelpOpen, onClose: onHelpClose } = useDisclosure();
   const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
@@ -183,6 +185,13 @@ const Navbar: React.FC<NavbarProps> = ({ preferences, onUpdatePreferences, activ
               <IconButton aria-label={t('navHowToUse', preferences.language)} icon={<FiHelpCircle />} variant="ghost"
                 borderRadius="xl" size="sm" onClick={onHelpOpen} />
             </Tooltip>
+
+            {/* Install button */}
+            {canInstall && onInstallClick && (
+              <Button size="sm" colorScheme="brand" borderRadius="xl" onClick={onInstallClick} display={{ base: 'none', sm: 'inline-flex' }}>
+                Install
+              </Button>
+            )}
 
             {/* Settings */}
             <Menu>
