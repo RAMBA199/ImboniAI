@@ -5,6 +5,7 @@ import {
   Tabs, TabList, TabPanels, Tab, TabPanel, useToast,
 } from '@chakra-ui/react';
 import { FiSearch, FiVolume2 } from 'react-icons/fi';
+import { t, Language } from '../utils/i18n';
 
 interface DictionaryWord {
   kinyarwanda: string;
@@ -20,6 +21,8 @@ const DICTIONARY_WORDS: DictionaryWord[] = [
   { kinyarwanda: 'Ni meza', english: 'I am fine', pronunciation: 'Nee meh-zah', category: 'Greetings' },
   { kinyarwanda: 'Murakoze', english: 'Thank you', pronunciation: 'Moo-rah-koh-zeh', category: 'Greetings' },
   { kinyarwanda: 'Irahire', english: 'Goodbye', pronunciation: 'Ee-rah-hee-reh', category: 'Greetings' },
+  { kinyarwanda: 'Yego', english: 'Yes', pronunciation: 'Yeh-go', category: 'Greetings' },
+  { kinyarwanda: 'Oya', english: 'No', pronunciation: 'Oh-yah', category: 'Greetings' },
 
   // Food & Drink
   { kinyarwanda: 'Ibiryo', english: 'Food', pronunciation: 'Ee-bee-ryo', category: 'Food & Drink' },
@@ -29,6 +32,7 @@ const DICTIONARY_WORDS: DictionaryWord[] = [
   { kinyarwanda: 'Imboga', english: 'Vegetables', pronunciation: 'Eem-boh-gah', category: 'Food & Drink' },
   { kinyarwanda: 'Isombe', english: 'Cassava leaves', pronunciation: 'Ee-sohm-beh', category: 'Food & Drink' },
   { kinyarwanda: 'Ubugari', english: 'Cassava bread', pronunciation: 'Oo-boo-gah-ree', category: 'Food & Drink' },
+  { kinyarwanda: 'Umugati', english: 'Bread', pronunciation: 'Oo-moo-gah-tee', category: 'Food & Drink' },
 
   // Places
   { kinyarwanda: 'Aho', english: 'Where', pronunciation: 'Ah-ho', category: 'Places' },
@@ -37,6 +41,7 @@ const DICTIONARY_WORDS: DictionaryWord[] = [
   { kinyarwanda: 'Inzu', english: 'House', pronunciation: 'Een-zoo', category: 'Places' },
   { kinyarwanda: 'Isoko', english: 'Market', pronunciation: 'Ee-soh-ko', category: 'Places' },
   { kinyarwanda: 'Resitora', english: 'Restaurant', pronunciation: 'Reh-see-toh-rah', category: 'Places' },
+  { kinyarwanda: 'Terefoni', english: 'Telephone', pronunciation: 'Teh-reh-foh-nee', category: 'Places' },
 
   // Numbers
   { kinyarwanda: 'Rimwe', english: 'One', pronunciation: 'Reem-weh', category: 'Numbers' },
@@ -44,23 +49,42 @@ const DICTIONARY_WORDS: DictionaryWord[] = [
   { kinyarwanda: 'Gatatu', english: 'Three', pronunciation: 'Gah-tah-too', category: 'Numbers' },
   { kinyarwanda: 'Kane', english: 'Four', pronunciation: 'Kah-neh', category: 'Numbers' },
   { kinyarwanda: 'Gatanu', english: 'Five', pronunciation: 'Gah-tah-noo', category: 'Numbers' },
+  { kinyarwanda: 'Cumi', english: 'Ten', pronunciation: 'Koo-mee', category: 'Numbers' },
 
   // Common Phrases
   { kinyarwanda: 'Ni byiza', english: 'It is good', pronunciation: 'Nee bee-yee-zah', category: 'Common Phrases' },
   { kinyarwanda: 'Ndagenda', english: 'I am going', pronunciation: 'N-dah-gehn-dah', category: 'Common Phrases' },
   { kinyarwanda: 'Ngiye', english: 'I am coming', pronunciation: 'N-gee-yeh', category: 'Common Phrases' },
   { kinyarwanda: 'Ese', english: 'Please', pronunciation: 'Eh-seh', category: 'Common Phrases' },
+  { kinyarwanda: 'Ndabizi', english: 'I know', pronunciation: 'N-dah-bee-zee', category: 'Common Phrases' },
+  { kinyarwanda: 'Mbabarira', english: 'Excuse me / Sorry', pronunciation: 'Mbah-bah-ree-rah', category: 'Common Phrases' },
+  { kinyarwanda: 'Ndashaka', english: 'I want', pronunciation: 'N-dah-shah-kah', category: 'Common Phrases' },
+
+  // Travel & Shopping
+  { kinyarwanda: 'Imodoka', english: 'Car', pronunciation: 'Ee-moh-doh-kah', category: 'Travel' },
+  { kinyarwanda: 'Itike', english: 'Ticket', pronunciation: 'Ee-tee-keh', category: 'Travel' },
+  { kinyarwanda: 'Amafaranga', english: 'Money', pronunciation: 'Ah-mah-fah-rahng-ah', category: 'Shopping' },
+  { kinyarwanda: 'Igitabo', english: 'Book', pronunciation: 'Ee-gee-tah-boh', category: 'Shopping' },
+  { kinyarwanda: 'Ubukode', english: 'Rent', pronunciation: 'Oo-boo-koh-deh', category: 'Travel' },
+
+  // Emergency
+  { kinyarwanda: 'Ubufasha', english: 'Help', pronunciation: 'Oo-boo-fah-shah', category: 'Emergency' },
+  { kinyarwanda: 'Ubuzima', english: 'Health', pronunciation: 'Oo-bee-zoo-mah', category: 'Emergency' },
+  { kinyarwanda: 'Polisi', english: 'Police', pronunciation: 'Poh-lee-see', category: 'Emergency' },
+  { kinyarwanda: 'Ambulance', english: 'Ambulance', pronunciation: 'Ahm-boo-lahnce', category: 'Emergency' },
 ];
 
 const CATEGORIES = ['All', ...Array.from(new Set(DICTIONARY_WORDS.map(w => w.category)))];
 
 interface DictionaryPageProps {
   isPaid?: boolean;
+  language?: Language;
 }
 
-const DictionaryPage: React.FC<DictionaryPageProps> = ({ isPaid = false }) => {
+const DictionaryPage: React.FC<DictionaryPageProps> = ({ isPaid = false, language = 'en' }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [direction, setDirection] = useState<'rw-to-en' | 'en-to-rw'>('rw-to-en');
   const toast = useToast();
 
   const cardBg = useColorModeValue('white', '#1e2d40');
@@ -68,9 +92,11 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({ isPaid = false }) => {
   const mutedColor = useColorModeValue('gray.500', 'gray.400');
 
   const filteredWords = useMemo(() => {
+    const search = searchTerm.toLowerCase().trim();
     return DICTIONARY_WORDS.filter(word => {
-      const matchesSearch = word.kinyarwanda.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           word.english.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = search.length === 0
+        ? true
+        : word.kinyarwanda.toLowerCase().includes(search) || word.english.toLowerCase().includes(search);
       const matchesCategory = selectedCategory === 'All' || word.category === selectedCategory;
       return matchesSearch && matchesCategory;
     });
@@ -84,7 +110,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({ isPaid = false }) => {
       speechSynthesis.speak(utterance);
 
       toast({
-        title: 'Pronouncing',
+        title: t('dictionaryHeader', language),
         description: `${word.kinyarwanda} (${word.pronunciation})`,
         status: 'info',
         duration: 2000,
@@ -93,46 +119,58 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({ isPaid = false }) => {
     }
   };
 
-  if (!isPaid) {
-    return (
-      <Box px={{ base: 4, md: 8 }} py={8} maxW="1200px" mx="auto">
-        <VStack spacing={8} align="center" justify="center" minH="60vh">
-          <Text fontSize="2xl" fontWeight="800">🇷🇼 Kinyarwanda Dictionary</Text>
-          <Text color={mutedColor} textAlign="center" maxW="md">
-            Unlock the Kinyarwanda Dictionary to learn pronunciation of common words used in Kigali restaurants and daily life.
-          </Text>
-          <Button colorScheme="brand" size="lg">
-            Unlock for 500 RWF
-          </Button>
-        </VStack>
-      </Box>
-    );
-  }
-
   return (
     <Box px={{ base: 4, md: 8 }} py={8} maxW="1400px" mx="auto">
       <VStack align="stretch" spacing={6}>
         <VStack align="start" spacing={2}>
           <HStack>
-            <Text fontSize="2xl" fontWeight="800">🇷🇼 Kinyarwanda Dictionary</Text>
-            <Badge colorScheme="green" borderRadius="full">Unlocked</Badge>
+            <Text fontSize="2xl" fontWeight="800">{t('dictionaryHeader', language)}</Text>
+            <Badge colorScheme="green" borderRadius="full">{t('dictionaryUnblockedLabel', language) || 'Unlocked'}</Badge>
           </HStack>
           <Text color={mutedColor}>
-            Learn common Kinyarwanda words and phrases. Click the speaker icon to hear pronunciation!
+            {t('dictionarySubtitle', language)}
           </Text>
+          {!isPaid && (
+            <Box bg={useColorModeValue('blue.50', 'whiteAlpha.100')} p={4} borderRadius="2xl" border="1px solid" borderColor={useColorModeValue('blue.200', 'whiteAlpha.200')}
+              w="100%">
+              <Text fontSize="sm" color={useColorModeValue('blue.800', 'blue.100')}>
+                {t('dictionaryTestingNotice', language)}
+              </Text>
+            </Box>
+          )}
         </VStack>
 
-        <InputGroup size="lg">
-          <InputLeftElement pointerEvents="none">
-            <FiSearch color="gray" />
-          </InputLeftElement>
-          <Input
-            placeholder="Search words in English or Kinyarwanda..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+        <HStack spacing={3} flexWrap="wrap">
+          <InputGroup size="lg" flex={1} minW="250px">
+            <InputLeftElement pointerEvents="none">
+              <FiSearch color="gray" />
+            </InputLeftElement>
+            <Input
+              placeholder={t('dictionarySearchPlaceholder', language)}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              borderRadius="2xl"
+            />
+          </InputGroup>
+          <Button
+            size="md"
+            variant={direction === 'rw-to-en' ? 'solid' : 'outline'}
+            colorScheme="brand"
             borderRadius="2xl"
-          />
-        </InputGroup>
+            onClick={() => setDirection('rw-to-en')}
+          >
+            RW → EN
+          </Button>
+          <Button
+            size="md"
+            variant={direction === 'en-to-rw' ? 'solid' : 'outline'}
+            colorScheme="brand"
+            borderRadius="2xl"
+            onClick={() => setDirection('en-to-rw')}
+          >
+            EN → RW
+          </Button>
+        </HStack>
 
         <Tabs variant="soft-rounded" colorScheme="brand" index={CATEGORIES.indexOf(selectedCategory)} onChange={(index) => setSelectedCategory(CATEGORIES[index])}>
           <TabList gap={2}>
@@ -164,10 +202,10 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({ isPaid = false }) => {
                           <HStack justify="space-between" align="start">
                             <VStack align="start" spacing={0}>
                               <Text fontSize="lg" fontWeight="700" color="brand.500">
-                                {word.kinyarwanda}
+                                {direction === 'rw-to-en' ? word.kinyarwanda : word.english}
                               </Text>
                               <Text fontSize="sm" color={mutedColor}>
-                                {word.english}
+                                {direction === 'rw-to-en' ? word.english : word.kinyarwanda}
                               </Text>
                             </VStack>
                             <Button
@@ -188,7 +226,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({ isPaid = false }) => {
                             borderRadius="lg"
                           >
                             <Text fontSize="xs" color={mutedColor} fontStyle="italic">
-                              Pronunciation: {word.pronunciation}
+                              {t('dictionaryPronounce', language)}: {word.pronunciation}
                             </Text>
                           </Box>
 
@@ -207,7 +245,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({ isPaid = false }) => {
                   </SimpleGrid>
                 ) : (
                   <Box textAlign="center" py={8}>
-                    <Text color={mutedColor}>No words found matching your search.</Text>
+                    <Text color={mutedColor}>{t('dictionaryNoWords', language)}</Text>
                   </Box>
                 )}
               </TabPanel>

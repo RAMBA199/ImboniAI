@@ -5,7 +5,8 @@ import {
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton,
   VStack, useDisclosure, Divider,
 } from '@chakra-ui/react';
-import { FiSun, FiMoon, FiBell, FiHelpCircle, FiUser, FiCircle } from 'react-icons/fi';
+import { t } from '../../utils/i18n';
+import { FiSun, FiMoon, FiBell, FiHelpCircle, FiUser, FiCircle, FiSettings } from 'react-icons/fi';
 import { UserPreferences, UserProfile } from '../../types';
 
 type AuthPageKey = 'auth' | 'explore' | 'chat' | 'pricing' | 'analytics' | 'profile' | 'dictionary';
@@ -39,11 +40,11 @@ const Navbar: React.FC<NavbarProps> = ({ preferences, onUpdatePreferences, activ
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const NAV_PAGES: Array<{ id: AuthPageKey; label: string; emoji: string }> = [
-    { id: 'explore', label: 'Explore', emoji: '🌍' },
-    { id: 'chat', label: 'AI Chat', emoji: '💬' },
-    { id: 'dictionary', label: 'Dictionary', emoji: '🇷🇼' },
-    { id: 'pricing', label: 'Pricing', emoji: '💎' },
-    { id: 'analytics', label: 'Analytics', emoji: '📊' },
+    { id: 'explore', label: t('navExplore', preferences.language), emoji: '🌍' },
+    { id: 'chat', label: t('navAIChat', preferences.language), emoji: '💬' },
+    { id: 'dictionary', label: t('navDictionary', preferences.language), emoji: '🇷🇼' },
+    { id: 'pricing', label: t('navPricing', preferences.language), emoji: '💎' },
+    { id: 'analytics', label: t('navAnalytics', preferences.language), emoji: '📊' },
   ];
 
   const markAllRead = () => {
@@ -103,7 +104,6 @@ const Navbar: React.FC<NavbarProps> = ({ preferences, onUpdatePreferences, activ
               borderRadius="full"
               px={2}
               fontSize="xs"
-              display={{ base: 'none', sm: 'flex' }}
             >
               {preferences.language === 'rw' ? '🇷🇼 RW' : '🇬🇧 EN'}
             </Badge>
@@ -179,10 +179,29 @@ const Navbar: React.FC<NavbarProps> = ({ preferences, onUpdatePreferences, activ
             </Menu>
 
             {/* Help */}
-            <Tooltip label="How to use Imboni">
-              <IconButton aria-label="Help" icon={<FiHelpCircle />} variant="ghost"
+            <Tooltip label={t('navHowToUse', preferences.language)}>
+              <IconButton aria-label={t('navHowToUse', preferences.language)} icon={<FiHelpCircle />} variant="ghost"
                 borderRadius="xl" size="sm" onClick={onHelpOpen} />
             </Tooltip>
+
+            {/* Settings */}
+            <Menu>
+              <MenuButton as={IconButton}
+                aria-label="Settings"
+                icon={<FiSettings />}
+                variant="ghost"
+                borderRadius="xl"
+                size="sm"
+              />
+              <MenuList borderRadius="2xl" shadow="xl">
+                <MenuItem onClick={() => onUpdatePreferences({ language: 'en' })}>
+                  🇬🇧 English
+                </MenuItem>
+                <MenuItem onClick={() => onUpdatePreferences({ language: 'rw' })}>
+                  🇷🇼 Kinyarwanda
+                </MenuItem>
+              </MenuList>
+            </Menu>
 
             {/* Profile menu */}
             {user && (
@@ -239,17 +258,17 @@ const Navbar: React.FC<NavbarProps> = ({ preferences, onUpdatePreferences, activ
       <Modal isOpen={isHelpOpen} onClose={onHelpClose} size="md" isCentered>
         <ModalOverlay backdropFilter="blur(8px)" />
         <ModalContent borderRadius="2xl">
-          <ModalHeader>How to use Imboni</ModalHeader>
+          <ModalHeader>{t('navHowToUse', preferences.language)}</ModalHeader>
           <ModalCloseButton borderRadius="full" />
           <ModalBody pb={6}>
             <VStack align="stretch" spacing={4}>
               {[
-                { emoji: '🗺️', title: 'Explore', desc: 'Browse places by category. Tap any card to see details.' },
-                { emoji: '💬', title: 'AI Chat', desc: 'Ask questions like "Where can I get coffee?" and get AI recommendations.' },
-                { emoji: '🎤', title: 'Voice Input', desc: 'Tap the mic icon to speak your question. Works in English and Kinyarwanda.' },
-                { emoji: '🔍', title: 'Search', desc: 'Type in the search bar to find specific places or categories.' },
-                { emoji: '✨', title: 'Simple Mode', desc: 'Enable Simple Mode in settings for larger text and easier navigation.' },
-                { emoji: '📍', title: 'Near You', desc: 'Places are sorted by distance. Default location is central Kigali.' },
+                { emoji: '🗺️', title: t('navExplore', preferences.language), desc: t('helpExploreDesc', preferences.language) },
+                { emoji: '💬', title: t('navAIChat', preferences.language), desc: t('helpAIChatDesc', preferences.language) },
+                { emoji: '🎤', title: t('voiceTitle', preferences.language), desc: t('helpVoiceInputDesc', preferences.language) },
+                { emoji: '🔍', title: t('helpSearchDesc', preferences.language).split('.')[0], desc: t('helpSearchDesc', preferences.language) },
+                { emoji: '✨', title: 'Simple Mode', desc: t('helpSimpleModeDesc', preferences.language) },
+                { emoji: '📍', title: t('helpNearYouDesc', preferences.language).split('.')[0], desc: t('helpNearYouDesc', preferences.language) },
               ].map(item => (
                 <HStack key={item.title} align="start" spacing={3}>
                   <Text fontSize="xl" flexShrink={0}>{item.emoji}</Text>

@@ -4,6 +4,7 @@ import {
   VStack, HStack, Text, Button, Box, Badge, Textarea, useColorModeValue,
   Progress, Alert, AlertIcon, useToast,
 } from '@chakra-ui/react';
+import { t } from '../../utils/i18n';
 import { FiMic, FiMicOff, FiCheck, FiEdit2, FiRefreshCw } from 'react-icons/fi';
 import { transcribeVoice } from '../../utils/api';
 
@@ -248,14 +249,14 @@ const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, language, onTr
                 >
                   <FiMic size={36} color="white" />
                 </Box>
-                <Text fontWeight="600" textAlign="center">Tap to start speaking</Text>
+                <Text fontWeight="600" textAlign="center">{t('voiceTapSpeak', language)}</Text>
                 <Text fontSize="sm" color="gray.500" textAlign="center">
-                  Speak clearly in {language === 'rw' ? 'Kinyarwanda' : 'English'} and ask about places in Kigali
+                  {t('voiceSpeakClearly', language, { lang: language === 'rw' ? 'Kinyarwanda' : 'English' })}
                 </Text>
                 <Text fontSize="xs" color="gray.500" textAlign="center">
                   {language === 'en'
-                    ? 'English transcriptions are sent automatically for faster experience.'
-                    : 'If not English, Whisper will detect it as Kinyarwanda. Please review before sending.'
+                    ? t('voiceEnglishAuto', language)
+                    : t('voiceWhisperDetect', language)
                   }
                 </Text>
                 <Text fontSize="xs" color="gray.500">Recording limited to {MAX_RECORDING_SECONDS} seconds to protect credits.</Text>

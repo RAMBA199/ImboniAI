@@ -10,13 +10,16 @@ const router = Router();
 
 // Generate Google Maps link and LocationLink object
 function generateLocationLink(place: any): LocationLink {
-  const mapsUrl = `https://www.google.com/maps?q=${encodeURIComponent(place.name)}+${encodeURIComponent(place.address)}&ll=${place.latitude},${place.longitude}&z=15`;
-  
+  const hasCoordinates = typeof place.latitude === 'number' && typeof place.longitude === 'number' && place.latitude !== 0 && place.longitude !== 0;
+  const mapsUrl = hasCoordinates
+    ? `https://www.google.com/maps?q=${encodeURIComponent(place.name)}+${encodeURIComponent(place.address)}&ll=${place.latitude},${place.longitude}&z=15`
+    : `https://www.google.com/maps/search/${encodeURIComponent(`${place.name} ${place.address}`)}`;
+
   return {
     placeId: place.id,
     placeName: place.name,
-    latitude: place.latitude,
-    longitude: place.longitude,
+    latitude: place.latitude || 0,
+    longitude: place.longitude || 0,
     address: place.address,
     image_url: place.image_url,
     mapsUrl,
@@ -27,17 +30,17 @@ function generateLocationLink(place: any): LocationLink {
 }
 
 // Save message to DB (graceful fail)
-async function saveMessage(sessionId: string, role: string, content: string) {
+async function saveMessage(sessionId: string, role: 'user' | 'assistant', content: string) {
   try {
     const db = mongoose.connection.db;
     if (!db) return;
 
     const chats = db.collection('chats');
     await chats.insertOne({
-      userId: 'demo-user',
-      message: role === 'user' ? content : null,
-      response: role === 'assistant' ? content : null,
-      createdAt: new Date()
+      sessionId,
+      role,
+      content,
+      createdAt: new Date(),
     });
   } catch (error) {
     // Graceful fail
@@ -51,17 +54,17 @@ async function getChatHistory(sessionId: string) {
     if (!db) return [];
 
     const chats = db.collection('chats');
-    const messages = await chats.find({ userId: 'demo-user' })
-      .sort({ createdAt: -1 })
-      .limit(20)
+    const messages = await chats.find({ sessionId })
+      .sort({ createdAt: 1 })
+      .limit(50)
       .toArray();
 
-    return messages.reverse().map(msg => ({
+    return messages.map(msg => ({
       id: msg._id.toString(),
       session_id: sessionId,
-      role: msg.message ? 'user' : 'assistant',
-      content: msg.message || msg.response,
-      created_at: msg.createdAt
+      role: msg.role,
+      content: msg.content,
+      created_at: msg.createdAt,
     }));
   } catch (error) {
     return [];
@@ -101,31 +104,38 @@ router.post('/', async (req: Request, res: Response) => {
       hasLocation ? userLat! : -1.9441,
       hasLocation ? userLon! : 30.0619
     );
-    const combinedPlaces = [...relevantBusinesses, ...relevantPlaces];
+    const hiddenGems = await getHiddenGems(
+      undefined,
+      hasLocation ? userLat! : -1.9441,
+      hasLocation ? userLon! : 30.0619,
+      3
+    );
+
+    const combinedPlaces = [...relevantBusinesses, ...relevantPlaces, ...hiddenGems];
     const uniqueTopPlaces = Array.from(new Map(combinedPlaces.map(place => [place.id, place])).values()).slice(0, 5);
 
     // Build enhanced message with place context + distance info
     let enhancedMessage = trimmedMessage;
-    if (uniqueTopPlaces.length > 0 || relevantBusinesses.length > 0) {
-      const placeContext = uniqueTopPlaces.map(p => {
-        const distStr = p.distance_km != null ? `, ${p.distance_km} km from user` : '';
-        return `"${p.name}" (${p.category}, ${p.address}, rating: ${p.rating}${distStr})`;
-      }).join(', ');
+    const locCtx = hasLocation
+      ? `User is near Kigali, Rwanda. Do not repeat raw GPS coordinates to the user.`
+      : 'User location unknown.';
 
-      const businessContext = relevantBusinesses.slice(0, 3).map(p => {
-        const distStr = p.distance_km != null ? `, ${p.distance_km} km from user` : '';
-        return `"${p.name}" (${p.category}, ${p.address}${distStr})`;
-      }).join(', ');
+    const placeContext = uniqueTopPlaces.map(p => {
+      const distStr = p.distance_km != null ? `, ${p.distance_km} km away` : '';
+      return `"${p.name}" (${p.category}, ${p.address}, rating: ${p.rating}${distStr})`;
+    }).join(', ');
 
-      const locCtx = hasLocation
-        ? `User is at coordinates ${userLat!.toFixed(5)}, ${userLon!.toFixed(5)}.`
-        : 'User location unknown.';
+    const hiddenGemContext = hiddenGems.slice(0, 3).map(p => {
+      const distStr = p.distance_km != null ? `, ${p.distance_km} km away` : '';
+      return `"${p.name}" (${p.category}, ${p.address}${distStr})`;
+    }).join(', ');
 
-      enhancedMessage = `${trimmedMessage}\n\n[Context: ${locCtx} Relevant nearby places: ${placeContext}`;
-      if (businessContext.length > 0) {
-        enhancedMessage += ` Hidden gems from registered businesses: ${businessContext}.`;
+    if (placeContext.length > 0 || hiddenGemContext.length > 0) {
+      enhancedMessage = `${trimmedMessage}\n\n[Context: ${locCtx} Nearby places: ${placeContext}`;
+      if (hiddenGemContext.length > 0) {
+        enhancedMessage += ` Registered hidden gems: ${hiddenGemContext}.`;
       }
-      enhancedMessage += `]\n\nWhen recommending places, mention them by their exact names so they appear with images and location links.`;
+      enhancedMessage += `] \n\nWhen recommending places, mention their exact names and addresses. Never include raw GPS coordinates in the final response.`;
     }
 
     // Generate AI response with location context

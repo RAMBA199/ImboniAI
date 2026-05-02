@@ -16,8 +16,9 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 function toPlace(p: any, userLat: number = DEFAULT_LAT, userLon: number = DEFAULT_LON): Place {
-  const latitude = p.location?.lat ?? DEFAULT_LAT;
-  const longitude = p.location?.lng ?? DEFAULT_LON;
+  const hasCoordinates = typeof p.location?.lat === 'number' && typeof p.location?.lng === 'number';
+  const latitude = hasCoordinates ? p.location.lat : 0;
+  const longitude = hasCoordinates ? p.location.lng : 0;
 
   const tags = [
     ...(Array.isArray(p.tags) ? p.tags : []),
@@ -41,7 +42,7 @@ function toPlace(p: any, userLat: number = DEFAULT_LAT, userLon: number = DEFAUL
     is_wheelchair_accessible: typeof p.isWheelchairAccessible === 'boolean' ? p.isWheelchairAccessible : false,
     is_budget_friendly: typeof p.isBudgetFriendly === 'boolean' ? p.isBudgetFriendly : false,
     is_family_friendly: typeof p.isFamilyFriendly === 'boolean' ? p.isFamilyFriendly : false,
-    distance_km: calculateDistance(userLat, userLon, latitude, longitude),
+    distance_km: hasCoordinates ? calculateDistance(userLat, userLon, latitude, longitude) : undefined,
     created_at: p.createdAt,
   };
 }
@@ -62,7 +63,7 @@ export async function registerBusiness(payload: {
   const businessRecord = {
     name: payload.name,
     address: payload.address,
-    location: { lat: DEFAULT_LAT, lng: DEFAULT_LON },
+    location: null,
     locationText: payload.address,
     type: payload.businessType,
     category: payload.businessType,

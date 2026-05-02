@@ -5,6 +5,7 @@ import {
   useToast, InputGroup, InputRightElement, Tooltip, SimpleGrid,
   Image,
 } from '@chakra-ui/react';
+import { t } from '../../utils/i18n';
 import { FiSend, FiMic, FiMessageCircle } from 'react-icons/fi';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatMessage, Place, UserPreferences, LocationLink } from '../../types';
@@ -35,8 +36,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       id: 'welcome',
       role: 'assistant',
       content: preferences.simpleMode
-        ? 'Hello! I can help you find places in Kigali. What are you looking for?'
-        : "Hello! I'm Imboni, your AI guide to Kigali 🇷🇼 RW. Ask me anything — from the best coffee spots to hidden gems, nightlife, local food, or accessible places. How can I help you today?",
+        ? t('chatGreetingSimple', preferences.language)
+        : t('chatGreetingFull', preferences.language),
       timestamp: new Date(),
     }
   ]);
@@ -200,7 +201,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <HStack spacing={1}>
             <Box w={2} h={2} bg="green.400" borderRadius="full" />
             <Text fontSize="xs" color="gray.500">
-              {userLocation ? `📍 Location active · Kigali Expert` : 'Online · Kigali Expert'}
+              {userLocation ? t('chatLocationActive', preferences.language) : t('chatOnline', preferences.language)}
             </Text>
           </HStack>
         </VStack>
@@ -328,7 +329,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       {/* Suggestion chips */}
       {messages.length <= 1 && (
         <Box px={4} py={2} borderTop="1px solid" borderColor={borderColor}>
-          <Text fontSize="xs" color="gray.500" mb={2} fontWeight="600">Try asking:</Text>
+          <Text fontSize="xs" color="gray.500" mb={2} fontWeight="600">{t('chatTryAsking', preferences.language)}</Text>
           <Flex gap={2} flexWrap="wrap">
             {SUGGESTIONS.map(s => (
               <Button key={s.label} size="xs" variant="outline" colorScheme="brand"
@@ -346,9 +347,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         bg={useColorModeValue('white', '#1e2d40')}>
         <form onSubmit={handleSubmit}>
           <HStack spacing={2}>
-            <Tooltip label="Voice input (simulated)">
+            <Tooltip label={t('chatVoiceInput', preferences.language)}>
               <IconButton
-                aria-label="Voice"
+                aria-label={t('chatVoiceInput', preferences.language)}
                 icon={<FiMic />}
                 variant="ghost"
                 colorScheme="brand"
@@ -361,7 +362,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder={preferences.simpleMode ? "Ask something..." : "Ask about places in Kigali..."}
+                placeholder={preferences.simpleMode ? t('chatPlaceholder', preferences.language) : t('chatPlaceholder', preferences.language)}
                 borderRadius="2xl"
                 fontSize="sm"
                 pr={12}

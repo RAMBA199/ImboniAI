@@ -61,9 +61,9 @@ const App: React.FC = () => {
       }
     }
 
-    const seenKey = userId ? `imboni_onboarded_${userId}` : 'imboni_onboarded';
-    const seen = localStorage.getItem(seenKey);
-    if (!seen) {
+    const seenKey = userId ? `imboni_onboarded_${userId}` : null;
+    const seen = seenKey ? localStorage.getItem(seenKey) : null;
+    if (!seen && userId) {
       setShowOnboarding(true);
     }
   }, []);
@@ -109,7 +109,6 @@ const App: React.FC = () => {
   const handleOnboardingComplete = async (prefs: UserPreferences) => {
     setPreferences(prefs);
     setShowOnboarding(false);
-    localStorage.setItem('imboni_onboarded', 'true');
     localStorage.setItem('imboni_prefs', JSON.stringify(prefs));
 
     if (user) {
@@ -250,7 +249,7 @@ const App: React.FC = () => {
                 onDeleteAccount={handleDeleteAccount}
               />
             )}
-            {activePage === 'dictionary' && <DictionaryPage isPaid={user?.isPaid || false} />}
+            {activePage === 'dictionary' && <DictionaryPage isPaid={user?.isPaid || false} language={preferences.language} />}
           </Box>
 
           {activePage === 'explore' && (

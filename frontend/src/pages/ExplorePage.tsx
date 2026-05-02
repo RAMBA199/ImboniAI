@@ -5,6 +5,7 @@ import PlaceCard from '../components/places/PlaceCard';
 import { Place, UserPreferences } from '../types';
 import { fetchPlaces, fetchHiddenGems } from '../utils/api';
 import { STATIC_PLACES } from '../data/places';
+import { t } from '../utils/i18n';
 
 interface ExplorePageProps {
   preferences: UserPreferences;
@@ -13,16 +14,16 @@ interface ExplorePageProps {
   onDataSourceChange?: (source: 'database' | 'static') => void;
 }
 
-const QUICK_SUGGESTIONS = [
-  { label: '🍽️ Places to eat', query: 'Where can I eat good food in Kigali?' },
-  { label: '☕ Coffee spots', query: 'Best coffee spots in Kigali' },
-  { label: '🌳 Relaxing places', query: 'Where can I relax in Kigali?' },
-  { label: '🎉 Nightlife', query: 'Best nightlife spots in Kigali' },
-  { label: '💰 Budget friendly', query: 'Budget-friendly places in Kigali' },
-  { label: '♿ Accessible', query: 'Wheelchair accessible places in Kigali' },
+const QUICK_SUGGESTIONS = (language: 'en' | 'rw') => [
+  { label: t('quickEat', language), query: 'Where can I eat good food in Kigali?' },
+  { label: t('quickCoffee', language), query: 'Best coffee spots in Kigali' },
+  { label: t('quickRelax', language), query: 'Where can I relax in Kigali?' },
+  { label: t('quickNightlife', language), query: 'Best nightlife spots in Kigali' },
+  { label: t('quickBudget', language), query: 'Budget-friendly places in Kigali' },
+  { label: t('quickAccessible', language), query: 'Wheelchair accessible places in Kigali' },
 ];
 
-// Map user interests to place filters
+// Map user interests to place filters and scoring
 function getPreferenceFilter(interests: string[]) {
   return (place: Place) => {
     if (interests.length === 0) return true;
@@ -30,26 +31,70 @@ function getPreferenceFilter(interests: string[]) {
     return interests.some(interest => {
       switch (interest) {
         case 'food':
-          return place.category === 'restaurant' || place.category === 'street-food';
+          return place.category === 'restaurant' || place.category === 'street-food' || place.tags.some(tag => /food|restaurant|menu/i.test(tag));
         case 'coffee':
-          return place.category === 'cafe';
+          return place.category === 'cafe' || place.tags.some(tag => /coffee|cafe|espresso|brew/i.test(tag));
         case 'nightlife':
-          return place.category === 'nightlife';
+          return place.category === 'nightlife' || place.tags.some(tag => /bar|nightlife|dj|cocktail|lounge/i.test(tag));
         case 'relaxation':
-          return place.category === 'cafe' || place.category === 'outdoor' || place.tags.includes('relaxation');
+          return place.tags.includes('relaxation') || place.category === 'outdoor' || place.category === 'cafe';
         case 'culture':
           return place.category === 'landmark' || place.category === 'art';
         case 'outdoor':
           return place.category === 'outdoor';
         case 'budget':
-          return place.is_budget_friendly;
+          return place.is_budget_friendly || place.tags.some(tag => /budget|cheap|affordable/i.test(tag));
         case 'family':
-          return place.is_family_friendly;
+          return place.is_family_friendly || place.tags.some(tag => /family|kids|children/i.test(tag));
         default:
           return false;
       }
     });
   };
+}
+
+function scorePlaceByPreferences(place: PlaceWithDistance, interests: string[]) {
+  let score = (place.rating || 3.5) * 10;
+
+  interests.forEach(interest => {
+    const category = place.category || '';
+    const tags = place.tags || [];
+
+    switch (interest) {
+      case 'food':
+        score += category === 'restaurant' || category === 'street-food' ? 18 : tags.some(tag => /food|restaurant|menu/i.test(tag)) ? 10 : 0;
+        break;
+      case 'coffee':
+        score += category === 'cafe' ? 20 : tags.some(tag => /coffee|cafe|espresso|brew/i.test(tag)) ? 12 : 0;
+        break;
+      case 'nightlife':
+        score += category === 'nightlife' ? 20 : tags.some(tag => /nightlife|bar|lounge|dj|cocktail/i.test(tag)) ? 12 : 0;
+        break;
+      case 'relaxation':
+        score += tags.includes('relaxation') || category === 'outdoor' || category === 'cafe' ? 16 : 0;
+        break;
+      case 'culture':
+        score += category === 'landmark' || category === 'art' ? 18 : 0;
+        break;
+      case 'outdoor':
+        score += category === 'outdoor' ? 18 : 0;
+        break;
+      case 'budget':
+        score += place.is_budget_friendly ? 16 : tags.some(tag => /budget|cheap|affordable/i.test(tag)) ? 10 : 0;
+        break;
+      case 'family':
+        score += place.is_family_friendly ? 16 : tags.some(tag => /family|kids|children/i.test(tag)) ? 10 : 0;
+        break;
+      default:
+        break;
+    }
+  });
+
+  if (place.distance_km != null) {
+    score += Math.max(0, 5 - Math.min(place.distance_km, 5));
+  }
+
+  return score;
 }
 
 interface PlaceWithDistance extends Place {
@@ -250,9 +295,23 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ preferences, onAskAI, onSugge
   }, [calculateDistanceKm]);
 
   // Filter sections
-  const forYouPlaces = preferences.interests.length > 0
-    ? allPlaces.filter(getPreferenceFilter(preferences.interests)).slice(0, 6)
-    : allPlaces.slice(0, 6);
+  const forYouPlaces = (() => {
+    const combined = [...hiddenGems, ...allPlaces];
+    const uniquePlaces = Array.from(new Map(combined.map(place => [place.id, place])).values());
+
+    if (preferences.interests.length === 0) {
+      return uniquePlaces
+        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        .slice(0, 6);
+    }
+
+    const scored = uniquePlaces
+      .map(place => ({ place, score: scorePlaceByPreferences(place, preferences.interests) }))
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.place);
+
+    return scored.slice(0, 6);
+  })();
 
   const popularPlaces = [...allPlaces]
     .sort((a, b) => b.rating - a.rating)
@@ -301,21 +360,21 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ preferences, onAskAI, onSugge
             <VStack align="start" spacing={1}>
               <Text fontSize={{ base: '2xl', md: '3xl' }} fontWeight="800" lineHeight="1.2">
                 {preferences.simpleMode
-                  ? '🌍 Find places in Kigali'
-                  : `🌍 ${preferences.interests.length > 0 ? 'Your personalized' : 'Discover the best'} Kigali`}
+                  ? t('exploreHeroSimple', preferences.language)
+                  : `🌍 ${preferences.interests.length > 0 ? t('exploreHeroPersonalized', preferences.language) : t('exploreHeroDefault', preferences.language)}`}
               </Text>
               <Text color={mutedColor} fontSize={{ base: 'sm', md: 'md' }}>
                 {preferences.simpleMode
-                  ? 'Tap a button below to start'
+                  ? t('exploreHeroSimpleDesc', preferences.language)
                   : preferences.interests.length > 0
-                    ? `Tailored to your interests: ${preferences.interests.map(i => i.charAt(0).toUpperCase() + i.slice(1)).join(', ')}`
-                    : 'AI-powered recommendations · Location-aware · Accessible for everyone'}
+                    ? `${t('exploreHeroInterests', preferences.language)}: ${preferences.interests.map(i => i.charAt(0).toUpperCase() + i.slice(1)).join(', ')}`
+                    : t('exploreHeroDefaultDesc', preferences.language)}
               </Text>
             </VStack>
 
             {/* Quick suggestion chips */}
             <Flex gap={2} flexWrap="wrap">
-              {QUICK_SUGGESTIONS.map(s => (
+              {QUICK_SUGGESTIONS(preferences.language).map(s => (
                 <Button
                   key={s.label}
                   size={{ base: 'sm', md: 'md' }}
@@ -342,10 +401,10 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ preferences, onAskAI, onSugge
           {nearbyPlaces.length > 0 && (
             <Box bg={sectionBg} p={6} borderRadius="2xl">
               <HStack mb={1}>
-                <SectionTitle emoji="📍">Near You</SectionTitle>
+                <SectionTitle emoji="📍">{t('exploreNearYouTitle', preferences.language)}</SectionTitle>
               </HStack>
               <Text color={mutedColor} mb={4} fontSize="sm">
-                Closest places around your current location, updated live.
+                {t('exploreNearYouSubtitle', preferences.language)}
               </Text>
               <PlaceGridRow places={nearbyPlaces} />
             </Box>
@@ -363,9 +422,9 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ preferences, onAskAI, onSugge
               <HStack spacing={3}>
                 <Text fontSize="2xl">📍</Text>
                 <VStack align="start" spacing={0}>
-                  <Text fontWeight="700" fontSize="sm">Enable location for better recommendations</Text>
+                  <Text fontWeight="700" fontSize="sm">{t('exploreEnableLocationTitle', preferences.language)}</Text>
                   <Text fontSize="xs" color={mutedColor}>
-                    Allow location access in your browser to see what's actually near you right now.
+                    {t('exploreEnableLocationSubtitle', preferences.language)}
                   </Text>
                 </VStack>
               </HStack>
@@ -374,9 +433,9 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ preferences, onAskAI, onSugge
           {/* For You Section */}
           {preferences.interests.length > 0 && forYouPlaces.length > 0 && (
             <Box bg={sectionBg} p={6} borderRadius="2xl">
-              <SectionTitle emoji="👤">For You</SectionTitle>
+              <SectionTitle emoji="👤">{t('exploreForYouTitle', preferences.language)}</SectionTitle>
               <Text color={mutedColor} mb={4} fontSize="sm">
-                Based on your interests: {preferences.interests.join(', ')}
+                {t('exploreForYouSubtitle', preferences.language)}
                 {dataSource === 'static' && (
                   <Text as="span" color="orange.500" ml={2} fontSize="xs">
                     (Demo data)
@@ -389,7 +448,7 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ preferences, onAskAI, onSugge
 
           {/* Full Places Section */}
           <Box>
-            <SectionTitle emoji="🌐">All Places in Kigali</SectionTitle>
+            <SectionTitle emoji="🌐">{t('exploreAllPlacesTitle', preferences.language)}</SectionTitle>
             <PlacesGrid
               onAskAI={onAskAI}
               simpleMode={preferences.simpleMode}
@@ -401,16 +460,16 @@ const ExplorePage: React.FC<ExplorePageProps> = ({ preferences, onAskAI, onSugge
 
           {/* Hidden Gems Section */}
           <Box bg={sectionBg} p={6} borderRadius="2xl">
-            <SectionTitle emoji="💎">Hidden Gems</SectionTitle>
+            <SectionTitle emoji="💎">{t('exploreHiddenGemsTitle', preferences.language)}</SectionTitle>
             <Text color={mutedColor} mb={4} fontSize="sm">
-              Registered businesses that we surface as unique hidden gems. The AI will use these when matching your interests.
+              {t('exploreHiddenGemsDesc', preferences.language)}
             </Text>
             {hiddenGems.length > 0 ? (
               <PlaceGridRow places={hiddenGems} />
             ) : (
               <Box p={6} borderRadius="xl" bg={useColorModeValue('white', '#0f1923')} border="1px dashed" borderColor={useColorModeValue('gray.200', 'whiteAlpha.200')}>
                 <Text color={mutedColor} textAlign="center">
-                  No hidden gems are registered yet. Businesses can register from the Pricing page and appear here once approved.
+                  {t('exploreNoHiddenGems', preferences.language)}
                 </Text>
               </Box>
             )}
